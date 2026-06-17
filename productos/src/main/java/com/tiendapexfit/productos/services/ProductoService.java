@@ -1,13 +1,15 @@
 package com.tiendapexfit.productos.services;
 
+import com.tiendapexfit.productos.dtos.ProductoDTO; // Import de DTO agregado
 import com.tiendapexfit.productos.entities.Producto;
+import com.tiendapexfit.productos.mappers.ProductoMapper;
 import com.tiendapexfit.productos.repositories.ProductoRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
-
+import java.util.stream.Collectors; // Import para transformar las listas con Streams
 
 @Service
 public class ProductoService {
@@ -16,31 +18,47 @@ public class ProductoService {
     private static final Logger logger = LoggerFactory.getLogger(ProductoService.class);
     
     private final ProductoRepository productoRepository;
+    private final ProductoMapper productoMapper; //Inyeccion de Mapper
 
     //Inyeccion de dependencia por const.
-    public ProductoService(ProductoRepository productoRepository){
+    public ProductoService(ProductoRepository productoRepository, ProductoMapper productoMapper){
         this.productoRepository = productoRepository;
+        this.productoMapper = productoMapper;
     }
 
     //1. Obtener todos los productos
-    public List<Producto> obtenerTodo(){
+    public List<ProductoDTO> obtenerTodo(){
         logger.info("Solicitando listado completo de suplementos");
-        return productoRepository.findAll();
+        // Buscamos las entidades en la BD y las transformamos a DTOs una por una
+        return productoRepository.findAll().stream()
+                .map(productoMapper::toDTO)
+                .collect(Collectors.toList());
     }
 
     //2. Obtener producto por ID
-    public Optional<Producto>obtenerPorId(Long id){
+    public Optional<ProductoDTO> obtenerPorId(Long id){
         logger.info("Buscando suplemento con ID: {}", id);
-        return productoRepository.findById(id);
+        // Si lo encuentra en la BD, lo mapea automáticamente a DTO
+        return productoRepository.findById(id)
+                .map(productoMapper::toDTO);
     }
 
     //3. Crear un nuevo producto
-    public Producto guardar(Producto producto){
+    public ProductoDTO guardar(ProductoDTO productoDto){
         try{
-            logger.info("Registrando nuevo producto: {} de la marca {}", producto.getNombre(), producto.getMarca());
+            logger.info("Registrando nuevo producto: {} de la marca {}", productoDto.getNombre(), productoDto.getMarca());
+            
+            // Convertimos el DTO que viene del controlador a Entidad para JPA
+            Producto producto = productoMapper.toEntity(productoDto);
+            
+            // Ojo: Si necesitas asociar la categoría real para que no vaya vacía, 
+            // se puede hacer mediante el ID que viaja en el DTO en el siguiente paso.
+            
             Producto productoGuardado = productoRepository.save(producto);
             logger.info("Producto registrado con exito con ID: {}", productoGuardado.getId());
-            return productoGuardado;
+            
+            // Retornamos el DTO final al cliente
+            return productoMapper.toDTO(productoGuardado);
         } catch (Exception e) {
             logger.error("Error al guardar datos del producto: {}", e.getMessage());
             throw e;
@@ -64,9 +82,12 @@ public class ProductoService {
     }
 
     //5. Buscar por marca
-    public List<Producto> buscarPorMarca(String marca){
+    public List<ProductoDTO> buscarPorMarca(String marca){
         logger.info("Buscando suplementos bajo la marca: {}", marca);
-        return productoRepository.findByMarca(marca);
+        // Filtramos las entidades por marca y las transformamos a DTOs
+        return productoRepository.findByMarca(marca).stream()
+                .map(productoMapper::toDTO)
+                .collect(Collectors.toList());
     }
 
 }

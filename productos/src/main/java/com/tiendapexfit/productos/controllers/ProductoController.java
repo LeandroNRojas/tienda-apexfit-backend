@@ -13,7 +13,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.tiendapexfit.productos.entities.Producto;
+import com.tiendapexfit.productos.dtos.ProductoDTO;
+/*import com.tiendapexfit.productos.entities.Producto;*/
+import com.tiendapexfit.productos.exceptions.ResourceNotFoundException;
 import com.tiendapexfit.productos.services.ProductoService;
 
 import jakarta.validation.Valid;
@@ -31,41 +33,42 @@ public class ProductoController {
 
     //1. GET - Obtener todos los productos
     @GetMapping
-    public ResponseEntity<List<Producto>> listarProductos() {
-        List<Producto> productos = productoService.obtenerTodo();
+    public ResponseEntity<List<ProductoDTO>> listarProductos() {
+        List<ProductoDTO> productos = productoService.obtenerTodo();
         return ResponseEntity.ok(productos);
     }
 
-    //2. GET - Obtener productos especifico por ID
+    //2. GET - Obtener productos especifico por ID o lanzar 404
     @GetMapping("/{id}")
-    public ResponseEntity<Producto> obtenerProducto(@PathVariable Long id){
-        return productoService.obtenerPorId(id)
-        .map(producto -> ResponseEntity.ok(producto))
-        .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<ProductoDTO> obtenerProducto(@PathVariable Long id){
+        ProductoDTO productoDto = productoService.obtenerPorId(id)
+        .orElseThrow(() -> new ResourceNotFoundException("No se encontró el suplemento con el ID: " + id));
+        return ResponseEntity.ok(productoDto);
     }
 
-    //3. POST - Crear nuevo producto
+    //3. POST - Crear nuevo producto recibiendo y devolviendo un DTO
     //@Valid activa las reglas como @NotBlank, @Positive, etc. usadas en la Entidad
     @PostMapping
-    public ResponseEntity<Producto> crearProducto(@Valid @RequestBody Producto producto){
-        Producto nuevoProducto = productoService.guardar(producto);
+    public ResponseEntity<ProductoDTO> crearProducto(@Valid @RequestBody ProductoDTO productoDto){
+        ProductoDTO nuevoProducto = productoService.guardar(productoDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(nuevoProducto);
     }
 
-    //4. DELETE - Eliminar producto
+    //4. DELETE - Eliminar producto por ID
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminarProducto(@PathVariable Long id) {
-        if (productoService.obtenerPorId(id).isPresent()){
-            productoService.eliminar(id);
-            return ResponseEntity.noContent().build();
+    public ResponseEntity<Void> eliminarProducto(@PathVariable Long id){
+        //Se usa el método del Service, si no existe, excepción 404
+        if (productoService.obtenerPorId(id).isEmpty()){
+            throw new ResourceNotFoundException("No se puede eliminar el suplemento con ID " + id+ "no existe");
         }
-        return ResponseEntity.notFound().build();
+        productoService.eliminar(id);
+        return ResponseEntity.noContent().build();
     }
 
     //5. GET - Filtro personalizado por Marca
     @GetMapping("/buscar")
-    public ResponseEntity<List<Producto>> filtrarPorMarca(@RequestParam String marca) {
-        List<Producto> productos = productoService.buscarPorMarca(marca);
+    public ResponseEntity<List<ProductoDTO>> filtrarPorMarca(@RequestParam String marca) {
+        List<ProductoDTO> productos = productoService.buscarPorMarca(marca);
         return ResponseEntity.ok(productos);
     }
 
