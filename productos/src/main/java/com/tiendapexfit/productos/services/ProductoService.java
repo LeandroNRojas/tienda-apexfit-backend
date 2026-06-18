@@ -90,4 +90,42 @@ public class ProductoService {
                 .collect(Collectors.toList());
     }
 
+    //6. Actualizar producto existente
+    public ProductoDTO actualizar(Long id, ProductoDTO dto){
+        try{
+            logger.info("Actualizando suplemento ID: {}", id);
+
+            //Verificar si el producto existe en la BD
+            Producto productoExistente = productoRepository.findById(id)
+                .orElseThrow(() -> new com.tiendapexfit.productos.exceptions.ResourceNotFoundException("No se puede actualizar: El suplemento con ID " + id + " no existe"));
+            
+            //Modificar datos de entidad existente con lo que viene del DTO
+            productoExistente.setNombre(dto.getNombre());
+            productoExistente.setDescripcion(dto.getDescripcion());
+            productoExistente.setPrecio(dto.getPrecio());
+            productoExistente.setMarca(dto.getMarca());
+
+            //Manejo de el recipiente de la categoría en caso de cambios
+            if (dto.getCategoriaId() != null){
+                com.tiendapexfit.productos.entities.Categoria categoria = new com.tiendapexfit.productos.entities.Categoria();
+                categoria.setId(dto.getCategoriaId());
+                productoExistente.setCategoria(categoria);
+            }
+
+            //Guardar cambios en BD
+            Producto productoActualizado = productoRepository.save(productoExistente);
+            logger.info("Producto con ID: {} actualizado con éxito", productoActualizado.getId());
+
+            //Retornar DTO actualizado a Cliente
+            return productoMapper.toDTO(productoActualizado);
+
+        } catch (com.tiendapexfit.productos.exceptions.ResourceNotFoundException e) {
+            logger.error("Error al actualizar: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            logger.error("Error inesperado al intentar procesar actualización del producto: {}", e.getMessage());
+            throw e;
+        }
+    }
+
 }
