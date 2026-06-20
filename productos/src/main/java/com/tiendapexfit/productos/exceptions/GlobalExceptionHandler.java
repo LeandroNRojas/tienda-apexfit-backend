@@ -26,6 +26,29 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
 
+    // Interceptor para capturar errores de datos basura (Validation @Valid)
+    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
+    public org.springframework.http.ResponseEntity<java.util.Map<String, Object>> manejarErroresValidacion(
+            org.springframework.web.bind.MethodArgumentNotValidException ex, 
+            org.springframework.web.context.request.WebRequest request) {
+        
+        java.util.Map<String, Object> respuesta = new java.util.HashMap<>();
+        respuesta.put("timestamp", java.time.LocalDateTime.now());
+        respuesta.put("status", org.springframework.http.HttpStatus.BAD_REQUEST.value());
+        respuesta.put("error", "Bad Request");
+        
+        // Extraemos solo los mensajes limpios que escribimos en el DTO
+        java.util.Map<String, String> detallesErrores = new java.util.HashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(error -> 
+            detallesErrores.put(error.getField(), error.getDefaultMessage())
+        );
+        
+        respuesta.put("messages", detallesErrores);
+        respuesta.put("path", request.getDescription(false).replace("uri=", ""));
+        
+        return new org.springframework.http.ResponseEntity<>(respuesta, org.springframework.http.HttpStatus.BAD_REQUEST);
+    }
+
     //2. Atrapar cualquier otro error inesperado del sistema (Error Interno - 500)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> manejarErroresGlobales(Exception ex, WebRequest request){

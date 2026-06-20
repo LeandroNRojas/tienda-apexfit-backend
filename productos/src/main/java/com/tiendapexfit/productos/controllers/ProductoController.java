@@ -51,9 +51,9 @@ public class ProductoController {
     //3. POST - Crear nuevo producto recibiendo y devolviendo un DTO
     //@Valid activa las reglas como @NotBlank, @Positive, etc. usadas en la Entidad
     @PostMapping
-    public ResponseEntity<ProductoDTO> crearProducto(@Valid @RequestBody ProductoDTO productoDto){
+    public ResponseEntity<ProductoDTO> guardarProducto(@jakarta.validation.Valid @RequestBody ProductoDTO productoDto) {
         ProductoDTO nuevoProducto = productoService.guardar(productoDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(nuevoProducto);
+        return new ResponseEntity<>(nuevoProducto, HttpStatus.CREATED);
     }
 
     //4. DELETE - Eliminar producto por ID
@@ -76,7 +76,7 @@ public class ProductoController {
 
     //6. PUT - Actualizar producto existente por ID
     @PutMapping("/{id}")
-    public ResponseEntity<ProductoDTO> actualizarProducto(@PathVariable Long id, @RequestBody ProductoDTO productoDto){
+    public ResponseEntity<ProductoDTO> actualizarProducto(@PathVariable Long id, @jakarta.validation.Valid @RequestBody ProductoDTO productoDto) {
         ProductoDTO productoActualizado = productoService.actualizar(id, productoDto);
         return ResponseEntity.ok(productoActualizado);
     }
