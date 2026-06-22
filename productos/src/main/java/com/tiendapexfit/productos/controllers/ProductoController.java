@@ -15,16 +15,29 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.tiendapexfit.productos.dtos.ProductoDTO;
-/*import com.tiendapexfit.productos.entities.Producto;*/
+import com.tiendapexfit.productos.entities.Producto;
 import com.tiendapexfit.productos.exceptions.ResourceNotFoundException;
 import com.tiendapexfit.productos.services.ProductoService;
 
 import io.micrometer.core.ipc.http.HttpSender.Response;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.models.annotations.OpenAPI30;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/productos")
+@OpenAPIDefinition(
+        info = @Info(
+            title = "API de Productos - Tienda ApexFit",
+            version = "1.0",
+            description = "Microservicios para la gestión de los productos y suplementos"
+        )
+    )
+    @Tag(name="Productos", description = "Endpoinst para el mantenimiento de inventario")
 public class ProductoController {
+
 
     private final ProductoService productoService;
 
